@@ -1,0 +1,8 @@
+# Python 缓存文件 所有目录下的__pycache__目录
+**/__pycache__/
+
+# python测试代码 根目录下的python目录
+python/
+
+# 数据文件 指定目录下的data目录
+learning-note/02-machine-learning/data/
