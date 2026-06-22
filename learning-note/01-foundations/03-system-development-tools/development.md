@@ -26,6 +26,8 @@ openai：OPENAI API接口
 ipykernel: jupyter内核
 torchinfo: nn模型结构摘要信息
 jieba: 中文分词工具
+gensim: 加载和训练词向量的工具
+
 
 # 二、pytorch框架
 PyTorch 是一个开源的深度学习框架，主要用于构建和训练神经网络。
