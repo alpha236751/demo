@@ -27,6 +27,11 @@ ipykernel: jupyter内核
 torchinfo: nn模型结构摘要信息
 jieba: 中文分词工具
 gensim: 加载和训练词向量的工具
+tqdm: 进度条工具
+flask: python微服务框架
+streamlit: web应用框架
+requests: 发送HTTP请求
+
 
 
 # 二、pytorch框架
