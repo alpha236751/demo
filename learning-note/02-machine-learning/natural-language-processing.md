@@ -78,7 +78,7 @@ jieba分词
 
 一些改进算法：
 - TF-IDF 考虑词频和逆文档频率，对词进行加权，而不是单纯的0和1
-- 
+  
 
 ### 2.3.2 语义化词向量
 为每个词生成一个具有语义的稠密向量
@@ -91,13 +91,17 @@ jieba分词
 - Skip-gram(Skip Gram)
 输入目标词，输出上下文
 
-1. Word2Vec原理
+一些改进算法：
+- fastText：缓解了OOV问题，更能捕捉到词的语义信息
+
+2. Word2Vec原理
 先独热编码，再输入到神经网络中
 两层神经网络，两层线性变换，最后softmax计算损失函数，通过反向传播更新参数，优化模型。
 取第一层的参数作为词向量表示。
 
-1. 获取Word2Vec词向量
+3. 获取Word2Vec词向量
 gensim 加载和训练词向量的工具
+
 - 使用他人发布的词向量 https://github.com/Embedding/Chinese-Word-Vectors
 ```python
 from gensim.models import KeyedVectors
@@ -111,6 +115,7 @@ print(model.similarity('北京', '上海')) # 查看词向量相似度
 print(model.most_similar('北京', topn=10)) # 查看与北京最相似的10个词
 print(model.most_similar(positive=['男人', '女孩'], negative=['男孩']))
 ```
+
 - 自行训练
 ```python
 from gensim.models import Word2Vec, KeyedVectors
@@ -176,10 +181,14 @@ embedding(input_tensor).shape
 逐个读取句子中的每个词，在每一步中根据当前词和之前上下文信息，不断更新对句子的理解
 
 ### 3.1.2 基础结构
+
 ### 3.1.3 多层结构
 每一层的输出序列作为下一层的输入，顶层RNN的输出作为最终的结果
+
 ### 3.1.4 双向结构
-同时使用两层RNN，正向和反向，将正向和反向的输出拼接起来，作为最终的结果。
+同时使用两层RNN，正向和反向，将正向和反向的输出结合起来，作为最终的结果。
+通常是直接拼接，也可以求平均或求和
+
 ### 3.1.5 多层+双向结构
 
 ### 3.1.6 API
