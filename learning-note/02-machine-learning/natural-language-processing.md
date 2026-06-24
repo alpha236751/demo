@@ -66,22 +66,37 @@ jieba分词
 词表(Vocabulary)具有双向映射关系，将token映射为整数索引，将索数映射为token
 
 ### 2.3.1 One-Hot编码
+1. 词袋模型(Bag of Words) 
+一句话对应一个向量
+2. 序列编码(Sequence Encoding) 
+一句话对应一个二维矩阵 
+
+缺点：
+- 维度灾难
+- 没有语义相似性
+- OOV
+
+一些改进算法：
+- TF-IDF 考虑词频和逆文档频率，对词进行加权，而不是单纯的0和1
+- 
+
 ### 2.3.2 语义化词向量
 为每个词生成一个具有语义的稠密向量
 
 1. Word2Vec概述
 基于分布假设，即一个词的含义由它周围的词决定。通过学习词与上下文之间的关系，自动为每个词生成一个语义化的向量表示。
+强调每个词视为一个独立的、不可分割的最小单元
 - CBOW(Continuous Bag of Words)
 输入上下文，输出目标词，不关注语序
 - Skip-gram(Skip Gram)
 输入目标词，输出上下文
 
-2. Word2Vec原理
+1. Word2Vec原理
 先独热编码，再输入到神经网络中
 两层神经网络，两层线性变换，最后softmax计算损失函数，通过反向传播更新参数，优化模型。
 取第一层的参数作为词向量表示。
 
-3. 获取Word2Vec词向量
+1. 获取Word2Vec词向量
 gensim 加载和训练词向量的工具
 - 使用他人发布的词向量 https://github.com/Embedding/Chinese-Word-Vectors
 ```python
