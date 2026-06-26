@@ -12,3 +12,6 @@ learning-note/02-machine-learning/data/
 
 # 项目文件
 projects/
+
+# hydra输出目录
+outputs/
