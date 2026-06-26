@@ -1,0 +1,4 @@
+config:
+  model:
+    name: resnet
+    num_classes: 10

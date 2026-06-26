@@ -1,20 +1,15 @@
 # 一、vscode+python开发环境
 ## vscode扩展
+- chinese 中文汉化
 - python扩展 4
 - jupyter扩展 5
 - markdown扩展 2
+- trae 字节ai编程助手
+- EvenBetterTOML toml语法高亮
+- ruff 代码风格和语法检查
 
-## 解释器(有conda不必要)
+## 解释器(有环境管理软件就不必要了)
 python解释器 清华镜像https://mirrors.tuna.tsinghua.edu.cn/python/
-
-## conda环境配置
-- miniforge镜像下载 https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/
-- 新建虚拟环境 `mamba create -n torch211-cu130 python=3.12`
-- 检查环境列表 `mamba env list`
-- 激活虚拟环境 `conda activate torch211-cu130`
-- 关闭虚拟环境 `conda deactivate torch211-cu130`
-- 删除虚拟环境 `mamba env remove -n torch211-cu130`
-- 查看当前环境下安装的包(无依赖) `mamba env export --from-history`
 
 ## 三方包：
 pytorch：深度学习框架
@@ -31,6 +26,7 @@ tqdm: 进度条工具
 flask: python微服务框架
 streamlit: web应用框架
 requests: 发送HTTP请求
+hydra-core：超参数配置管理
 
 
 
@@ -125,4 +121,107 @@ Conda 从远程仓库下载库，核心渠道分为三类：
 - 并行下载依赖，解析环境速度大幅提升
 - 完全兼容 conda 的环境、渠道、命令语法
 ### 4.3 使用方式
-安装后直接用 `mamba` 替换 `conda` 命令即可（如 `mamba install numpy`）
+- miniforge镜像下载 https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/
+- 新建虚拟环境 `mamba create -n torch211-cu130 python=3.12`
+- 检查环境列表 `mamba env list`
+- 激活虚拟环境 `conda activate torch211-cu130`
+- 关闭虚拟环境 `conda deactivate torch211-cu130`
+- 删除虚拟环境 `mamba env remove -n torch211-cu130`
+- 查看当前环境下安装的包(无依赖) `mamba env export --from-history`
+
+# 四、uv和pixi
+## 4.1 uv
+用 Rust 编写的新一代高性能 Python 工具链，旨在替代 pip, venv, pyenv 等多个工具
+### 4.1.1 安装
+以管理员身份运行 PowerShell
+```shell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# 安装完成后，配置环境变量，重启 PowerShell 
+
+# 配置好环境变量后，检查安装是否成功
+uv --version
+```
+
+### 4.1.2 创建环境 不必要
+```shell
+# 创建环境
+uv venv my_venv -p 3.10
+# 激活环境
+.\my_venv\Scripts\activate
+# 退出环境
+deactivate
+```
+
+### 4.1.3 项目搭建
+ ```shell
+# 创建项目目录
+mkdir my_project
+cd my_project
+
+# 初始化项目
+uv init -p 3.10 [项目路径]  # 默认在当前目录初始化 也可指定目录，
+
+# 安装依赖
+# 兼容pip命令
+uv pip install requests
+# 如果没有环境文件，会自动创建.venv环境 
+uv add requests
+
+# 根据uv.lock文件安装项目依赖
+uv sync
+# 同样兼容pip命令
+uv pip freeze > requirements.txt
+pip install -r requirements.txt
+```
+
+### 4.1.4 pyproject.toml 结构
+```toml
+[project] # 项目核心元数据+依赖
+name = "my_project"
+version = "0.1.0"
+description = "A small project to demonstrate uv usage"
+readme = "README.md"
+dependencies = [
+   "requests",
+]
+
+
+[dependency-group] # 配置开发依赖
+dev = [
+   "requests",
+]
+
+
+[tool] # 第三方插件的配置
+
+[tool.uv]
+
+[tool.ruff]
+
+
+[build-system] # 打包长传pipy配置
+
+```
+
+
+
+
+## 4.2 pixi
+受 cargo 启发、兼容 conda 生态的高性能跨语言包管理器，可视为 conda 的现代化替代品
+
+略
+
+
+# 六、ruff
+
+1. 快速修复
+   在错误提示上点击
+2. 全部修复
+   打开命令面板，执行 `Ruff:Fix all auto-fixable problems`
+3. 格式化文档
+   format document shift + alt +f
+4. 组织导入
+   organize imports shift + alt + o
+   
+
