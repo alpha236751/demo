@@ -27,6 +27,7 @@ flask: python微服务框架
 streamlit: web应用框架
 requests: 发送HTTP请求
 hydra-core：超参数配置管理
+tensorboard：可视化训练过程
 
 
 
@@ -131,7 +132,8 @@ Conda 从远程仓库下载库，核心渠道分为三类：
 
 # 四、uv和pixi
 ## 4.1 uv
-用 Rust 编写的新一代高性能 Python 工具链，旨在替代 pip, venv, pyenv 等多个工具
+用 Rust 编写的新一代高性能 Python 工具链，旨在替代 pip, venv, pyenv, poetry 等多个工具。核心特点：极速解析依赖、自动管理虚拟环境、内置锁文件机制。
+
 ### 4.1.1 安装
 以管理员身份运行 PowerShell
 ```shell
@@ -143,65 +145,139 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 uv --version
 ```
 
-### 4.1.2 创建环境 不必要
+### 4.1.2 虚拟环境管理
+uv 在项目中使用 `uv add` / `uv sync` 时会**自动创建 `.venv` 虚拟环境**，无需手动操作。以下为手动管理环境的命令，供特殊场景参考：
 ```shell
-# 创建环境
-uv venv my_venv -p 3.10
-# 激活环境
+# 创建虚拟环境（指定 Python 版本）
+uv venv -p 3.10
+
+# 创建虚拟环境到指定目录
+uv venv my_venv -p 3.12
+
+# 激活环境 (Windows PowerShell)
 .\my_venv\Scripts\activate
+# 激活环境 (macOS / Linux)
+source my_venv/bin/activate
+
 # 退出环境
 deactivate
+
+# 删除虚拟环境（直接删除目录即可）
+Remove-Item -Recurse -Force .venv
 ```
 
 ### 4.1.3 项目搭建
- ```shell
-# 创建项目目录
-mkdir my_project
+uv 提供两套工作流：**原生 uv 工作流（推荐）** 和 **pip 兼容模式**。
+
+**原生 uv 工作流**
+```shell
+# 1. 初始化项目（自动生成 pyproject.toml 和 .venv）
+uv init my_project -p 3.10
 cd my_project
 
-# 初始化项目
-uv init -p 3.10 [项目路径]  # 默认在当前目录初始化 也可指定目录，
-
-# 安装依赖
-# 兼容pip命令
-uv pip install requests
-# 如果没有环境文件，会自动创建.venv环境 
+# 2. 添加依赖（自动创建/更新 .venv 和 uv.lock）
 uv add requests
+uv add pandas numpy
 
-# 根据uv.lock文件安装项目依赖
+# 3. 添加开发依赖（仅开发时使用，不打包到发布版本）
+uv add --dev pytest ruff
+
+# 4. 在项目环境中运行脚本
+uv run python main.py
+uv run pytest
+
+# 5. 移除依赖
+uv remove requests
+
+# 6. 查看依赖树
+uv tree
+
+# 7. 根据 uv.lock 同步环境（团队协作时，他人拉取项目后执行）
 uv sync
-# 同样兼容pip命令
+
+# 8. 更新所有依赖到最新兼容版本
+uv lock --upgrade
+```
+
+**pip 兼容模式**（适合已有 requirements.txt 的旧项目）
+```shell
+# 安装依赖
+uv pip install requests
+
+# 导出依赖列表
 uv pip freeze > requirements.txt
-pip install -r requirements.txt
+
+# 从 requirements.txt 批量安装
+uv pip install -r requirements.txt
+```
+
+**Python 版本管理**（替代 pyenv）
+```shell
+# 查看可安装的 Python 版本
+uv python list
+
+# 安装指定 Python 版本
+uv python install 3.10
+uv python install 3.12
+
+# 查看已安装的 Python 版本
+uv python list --only-installed
 ```
 
 ### 4.1.4 pyproject.toml 结构
 ```toml
-[project] # 项目核心元数据+依赖
+[project]
 name = "my_project"
 version = "0.1.0"
 description = "A small project to demonstrate uv usage"
 readme = "README.md"
+requires-python = ">=3.10"
 dependencies = [
-   "requests",
+    "requests>=2.28",
+    "pandas>=2.0",
 ]
 
+# 可选依赖（按需安装的额外功能组）
+[project.optional-dependencies]
+gpu = [
+    "torch>=2.0",
+]
+web = [
+    "flask>=3.0",
+]
 
-[dependency-group] # 配置开发依赖
+# 命令行入口脚本（pip install 后可全局调用）
+[project.scripts]
+my-cli = "my_project.cli:main"
+
+# 开发依赖组（uv add --dev 会写入此处）
+[dependency-groups]
 dev = [
-   "requests",
+    "pytest>=8.0",
+    "ruff>=0.5",
 ]
 
-
-[tool] # 第三方插件的配置
-
+# 第三方工具配置
 [tool.uv]
+# 指定 PyPI 镜像源（加速国内下载）
+index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
 [tool.ruff]
+# 行宽（与 Black 兼容）
+line-length = 88
+# 目标 Python 版本
+target-version = "py310"
+# 启用的规则集
+lint.select = ["E", "F", "I", "N", "W"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
 
-[build-system] # 打包长传pipy配置
-
+# 打包上传 PyPI 配置
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 ```
 
 
@@ -223,5 +299,3 @@ dev = [
    format document shift + alt +f
 4. 组织导入
    organize imports shift + alt + o
-   
-
