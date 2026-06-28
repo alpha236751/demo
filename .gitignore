@@ -6,3 +6,21 @@
 
 # 要保留的文件
 !/learning-note/
+
+# 要忽略的文件
+# 相对路径 __pycache__ 目录
+__pycache__/
+# 绝对路径 指定目录下的 子文件 和 子目录
+/learning-note/02-machine-learning/data/**
+
+# 追加显式忽略
+.venv/
+
+# 补充忽略
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+.env
