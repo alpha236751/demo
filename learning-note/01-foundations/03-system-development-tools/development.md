@@ -6,12 +6,14 @@
 - markdown扩展 2
 - trae 字节ai编程助手
 - EvenBetterTOML toml语法高亮
-- ruff 代码风格和语法检查
+- ruff 代码格式化和语法检查
+- ty 类型检查
 
 ## 解释器(有环境管理软件就不必要了)
 python解释器 清华镜像https://mirrors.tuna.tsinghua.edu.cn/python/
 
 ## 三方包：
+**生产环境**：
 pytorch：深度学习框架
 pandas：处理表格数据
 matplotlib：数据可视化
@@ -28,6 +30,10 @@ streamlit: web应用框架
 requests: 发送HTTP请求
 hydra-core：超参数配置管理
 tensorboard：可视化训练过程
+
+**开发环境**：
+ruff: 代码格式化和语法检查
+ty: 类型检查
 
 
 
