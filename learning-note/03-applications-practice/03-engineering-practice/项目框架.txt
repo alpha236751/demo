@@ -1,0 +1,100 @@
+my_ai_project/
+├── .github/                        # CI/CD 与自动化
+│   └── workflows/
+│       ├── ci.yaml                 # 代码检查、测试运行
+│       └── deploy.yaml             # 模型部署流水线
+│
+├── configs/                        # 配置中心（核心：代码与超参解耦）
+│   ├── experiment/
+│   │   ├── baseline.yaml           # 基线实验配置
+│   │   └── finetune_lora.yaml      # 微调配置
+│   ├── data/
+│   │   ├── raw_schema.yaml         # 原始数据字段定义
+│   │   └── augmentations.yaml      # 数据增强策略
+│   ├── model/
+│   │   ├── architecture.yaml       # 模型结构参数 (n_layers, d_model等)
+│   │   └── checkpoint.yaml         # 预训练权重路径
+│   └── infrastructure/
+│       └── environment.yaml        # 环境变量映射（DB连接、S3桶等）
+│
+├── data/                           # 数据目录（建议配合Git LFS或DVC）
+│   ├── raw/                        # 不可变的原始数据（只读）
+│   ├── interim/                    # 中间临时数据（清洗/去重后）
+│   ├── processed/                  # 最终建模特征数据（训练集/验证集/测试集）
+│   └── external/                   # 外部参考数据（如预训练词表、实体词典）
+│
+├── deployment/                     # 部署与服务层（与核心研究代码隔离）
+│   ├── api/
+│   │   ├── main.py                 # FastAPI / Flask 入口
+│   │   ├── routes/                 # 路由定义
+│   │   ├── schemas/                # Pydantic 请求/响应模型
+│   │   └── middleware/             # 鉴权、限流、日志中间件
+│   ├── monitoring/
+│   │   ├── prometheus_metrics.py   # 推理延迟、数据漂移指标
+│   │   └── drift_detection.py      # Evidently AI 监控脚本
+│   ├── Dockerfile                  # 服务镜像构建
+│   └── docker-compose.yml          # 编排（API + Redis + DB）
+│
+├── models/                         # 模型工件存储
+│   ├── checkpoints/                # 训练产生的 .pt / .h5 / .pkl 文件
+│   ├── export/                     # 转换后的ONNX / TensorRT / GGUF 格式
+│   └── vocab/                      # Tokenizer 词表文件
+│
+├── notebooks/                      # 实验探索（命名规范：编号_描述）
+│   ├── 01_eda_data_analysis.ipynb
+│   ├── 02_feature_engineering.ipynb
+│   └── 03_prototype_modeling.ipynb
+│
+├── references/                     # 项目文档与参考资料
+│   ├── papers/                     # 相关论文PDF
+│   └── data_dictionaries/          # 数据字段含义说明
+│
+├── reports/                        # 生成式产出（不纳入版本控制，仅输出）
+│   ├── figures/                    # 训练曲线、混淆矩阵图
+│   └── metrics/                    # 评估指标的JSON/CSV记录
+│
+├── scripts/                        # 运维与一次性脚本
+│   ├── download_dataset.py         # 数据下载
+│   └── migrate_old_weights.py      # 权重格式转换
+│
+├── src/                            # 核心源代码（可安装的Python包）
+│   ├── __init__.py
+│   ├── data/                       # 数据层
+│   │   ├── loader.py               # 多格式数据读取器
+│   │   ├── preprocessor.py         # 清洗、归一化
+│   │   └── augmenter.py            # 离线/在线增强
+│   ├── features/                   # 特征工程层
+│   │   ├── builder.py              # 特征组合与生成
+│   │   └── embeddings.py           # 向量化（如调用Embedding API）
+│   ├── models/                     # 模型架构层
+│   │   ├── architecture.py         # PyTorch Lightning / Keras Module
+│   │   └── losses.py               # 自定义损失函数
+│   ├── training/                   # 训练流水线
+│   │   ├── trainer.py              # 训练循环封装
+│   │   ├── optimizer.py            # 优化器与调度器配置
+│   │   └── callbacks.py            # 早停、模型保存、学习率监控
+│   ├── evaluation/                 # 评估层
+│   │   ├── validator.py            # 验证集评估
+│   │   └── metrics.py              # 自定义指标（F1, BLEU, 精准率等）
+│   └── utils/                      # 基础设施工具
+│       ├── logger.py               # 结构化日志（JSON格式）
+│       ├── config_loader.py        # 加载YAML并合并Hydra/OmegaConf
+│       └── gpu_manager.py          # GPU资源分配与内存清理
+│
+├── tests/                          # 测试体系
+│   ├── unit/                       # 单元测试（pytest）
+│   │   ├── test_preprocessor.py
+│   │   └── test_metrics.py
+│   ├── integration/                # 集成测试（数据流+模型小样本跑通）
+│   │   └── test_pipeline.py
+│   └── fixtures/                   # 测试用固定假数据
+│
+├── .dvc/                           # DVC (数据版本控制) 缓存目录
+├── .env.example                    # 环境变量模板（敏感信息占位）
+├── .gitignore
+├── .pre-commit-config.yaml         # 代码提交前钩子（black, isort, mypy）
+│
+├── Makefile                        # 快捷指令（make train, make test, make serve）
+├── pyproject.toml                  # 现代Python项目管理（依赖+打包）[推荐Poetry/uv]
+├── README.md                       # 项目介绍、安装步骤、快速开始
+└── setup.cfg / setup.py            # 传统打包配置（备选）
