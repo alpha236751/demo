@@ -524,7 +524,7 @@ print(result)
 - 元组列表 `("human", "你好，最近怎么样")`
 - 字符串列表 默认是用户消息
 - 字典列表 `{"role": "human", "content": "你好，最近怎么样"}`
-- 消息对象列表 不能声明变量
+- **消息对象列表 不能声明变量**
 - BaseMessagePromptTemplate
 - BaseChatPromptTemplate 嵌套
 
@@ -589,6 +589,55 @@ messages = PromptTemplateLibrary.TRANSLATOR.format_messages(text="你好")
 #### 2.3.4 模板组合
 - 字符串组合 +
 - 模板组合 +
+
+#### 2.3.5 few-shot
+```python
+import os
+
+from dotenv import load_dotenv
+from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
+from langchain_openai import ChatOpenAI
+from rich import print as rich_print
+
+load_dotenv()
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_API_BASE = os.getenv("DEEPSEEK_API_BASE")
+
+
+model = ChatOpenAI(
+    model="deepseek-v4-flash",
+    api_key=DEEPSEEK_API_KEY,
+    base_url=DEEPSEEK_API_BASE,
+)
+
+# 示例数据 字典列表
+examples = [{"word": "开心", "antonym": "难过"}, {"word": "高", "antonym": "矮"}]
+# 示例提示词
+example_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("human", "{word}"),
+        ("ai", "{antonym}"),
+    ]
+)
+
+# fewshot模板
+fewshot_template = FewShotChatMessagePromptTemplate(
+    example_prompt=example_prompt,
+    examples=examples,
+)
+# 最终的提示词模板
+prompt_template = ChatPromptTemplate.from_messages(
+    [
+        fewshot_template,
+        ("human", "{word}"),
+    ]
+)
+# 提示词
+prompt = prompt_template.format(word="富有")
+
+result = model.invoke(prompt)
+rich_print(result)
+```
 
 # 第五章 工具使用
 ## 1. tools概述
@@ -662,16 +711,7 @@ def get_current_weather(location: str) -> str:
 ```
 ### 2.2 使用@tool装饰器
 ```python
-# 描述以tool为准
-@tool(description="Get the current weather in a given location")
-def get_current_weather(location: str) -> str:
-    """
-    Get the current weather in a given location
-    """
-    return f"The current weather in {location} is sunny with a temperature of 25 degrees Celsius"
-```
-```python
-# 当没有向tool传递description时，会从docstring中提取
+# docstring描述 严格按照谷歌风格格式
 @tool(parse_docstring=True)
 def get_current_weather(location: str) -> str:
     """
@@ -687,6 +727,43 @@ def get_current_weather(location: str) -> str:
 ```
 
 ### 2.3 自定义args_schema
+#### 2.3.1 pydantic模型
+```python
+class WeatherInput(BaseModel):
+    location: str = Field(
+        description="city name",
+        default="北京",
+    )
+    unit: Literal["celsius", "fahrenheit"]
+
+
+@tool(
+    args_schema=WeatherInput, description="Get the current weather in a given location"
+)
+def get_current_weather(location, unit="celsius"):
+
+    return f"The current weather in {location} is sunny with a temperature of 25 degrees {unit}"
+```
+
+#### 2.3.2 JsonSchema
+```python
+json_schema = {'properties': {'location': {'default': '北京',
+     'description': 'city name',
+     'type': 'string'},
+    'unit': {'enum': ['celsius', 'fahrenheit'], 'type': 'string'}},
+   'required': ['unit'],
+   'type': 'object'}
+
+
+@tool(
+    args_schema=json_schema, description="Get the current weather in a given location"
+)
+def get_current_weather(location, unit="celsius"):
+
+    return f"The current weather in {location} is sunny with a temperature of 25 degrees {unit}"
+```
+
+
 
 
 

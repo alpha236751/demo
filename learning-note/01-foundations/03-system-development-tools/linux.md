@@ -351,10 +351,23 @@ yum deplist 包名
 ```bash
 # 卸载旧版
 yum remove docker docker-common docker-engine
-# 配置 yum 仓库（略，建议使用官方脚本）
-curl -fsSL https://get.docker.com | bash -s docker
-# 启动并设置自启
+
+# 1. 通过脚本安装 限制Linux版本为指定版本
+# 下载 Docker 安装脚本 --output 输出重定向 将输出保存到文件 后跟文件名
+curl -fsSL https://get.docker.com -o install-docker.sh
+# 执行安装脚本
+sudo sh install-docker.sh
+
+# 2. 通过yum安装
+# 配置 yum 仓库
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+# 安装 Docker
+yum install -y docker-ce
+
+
+# 启动 Docker 服务
 systemctl start docker
+# 开机自启
 systemctl enable docker
 ```
 
@@ -369,11 +382,17 @@ docker rmi 镜像ID
 
 #### 容器操作
 ```bash
+# 创建并启动容器 -d 后台运行 --name 容器名 -p 宿主机端口:容器端口 镜像名:标签
 docker run -d --name web -p 80:80 nginx:1.25
+# 查看所有容器 Process Status --all
 docker ps -a
+# 停止容器
 docker stop web
+# 启动容器
 docker start web
+# 删除容器 -f 强制删除（不检查依赖）
 docker rm -f web
+# 查看容器日志
 docker logs web
 ```
 
