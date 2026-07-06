@@ -102,7 +102,9 @@ print(response)
 
 # 3.进阶技巧
 ## 3.1 思维链(COT)
-- 思维链（chain of thought, COT）：在提问时以[let's think step by step]开头，ai就会把问题拆分为多个步骤，逐步解决
+- 思维链（chain of thought, COT）
+  - 零样本CoT：在提问时以[let's think step by step]开头，ai就会把问题拆分为多个步骤，逐步解决
+  - 样本CoT：给出一些 一步步推理的 示例，ai就会根据这些示例，把问题拆分为多个步骤，逐步解决
 ## 3.2 自我一致性（SC）
 - 自我一致性（self-consistency）：用相同的prompt，多次调用模型，最后取结果出现的次数最多的那个。
 ## 3.3 思维树（ToT）
@@ -111,6 +113,9 @@ print(response)
 2.思维生成：每个节点生成多个候选下一步（如 3-5 个），常用采样或提示生成。   
 3.状态评估：模型自评或互评每个路径的优劣 / 可行性，为每条路径打分排序。
 4.搜索与剪枝：用 BFS/DFS 探索，保留高分分支、剪掉无效分支，必要时回溯重来。
+## 3.4 ReAct
+thought -> action -> observation 循环
+可以控制循环次数，或token数量 避免无限循环
 
 # 4. 防止Prompt注入
 ## 4.1 Prompt注入分类器

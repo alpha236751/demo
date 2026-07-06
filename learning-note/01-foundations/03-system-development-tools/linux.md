@@ -422,10 +422,20 @@ docker volume inspect mydata
 ```
 
 ### Docker 网络
+- bridge 创建虚拟网桥 每个容器分配私有IP连接到网桥上 自定义bridge会将容器名解析为IP地址加端口 适合单宿主多容器
+- host 容器直接共享宿主机的IP地址和端口 容易端口冲突 有安全风险 适合单容器多端口
+- none 禁用网络
 ```bash
-docker network create mynet
-docker run --network mynet --name app1 ...
-docker network inspect mynet
+# 查看所有网络
+docker network ls
+# 创建自定义网络
+docker network create [mynet]
+# 启动容器时指定网络
+docker run --network [mynet] --name [app1] ...
+# 查看网络详情
+docker network inspect [mynet]
+# 连接容器到自定义网络
+docker network connect [mynet] [app1]
 ```
 
 ## 三、Docker Compose（批量管理）
