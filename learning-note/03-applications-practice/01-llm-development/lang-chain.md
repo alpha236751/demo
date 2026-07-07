@@ -670,7 +670,10 @@ def get_current_weather(location: str) -> str:
 
 
 # 绑定工具
-model_with_tools = model.bind_tools([get_current_weather])
+model_with_tools = model.bind_tools(
+    [get_current_weather],
+    tool_choice="auto", # none不带用工具 auto自动调用工具 required至少调用一个工具 直接指定工具名称强制调用该工具
+       )
 # 返回ToolMessage对象
 response = model_with_tools.invoke("北京天气怎么样")
 
@@ -762,6 +765,83 @@ def get_current_weather(location, unit="celsius"):
 
     return f"The current weather in {location} is sunny with a temperature of 25 degrees {unit}"
 ```
+
+### 2.4 多工具调用
+```python
+from rich import print as rprint
+
+# 绑定工具
+tools = [get_stock_price, search_news]
+model_with_tools = model.bind_tools(tools)
+
+message_list = []
+human_message = HumanMessage(content="Google今天的股价是多少？最近有什么新闻？")
+# human_message = HumanMessage(content="比较一下微软和苹果的股价")
+# human_message = HumanMessage(content="腾讯最近有什么重大新闻？")
+# human_message = HumanMessage(content="海水为什么是咸的？")
+message_list.append(human_message)
+
+
+while True:
+    response = model_with_tools.invoke(message_list)
+    # rprint(response)
+    # break
+
+    message_list.append(response)
+
+    if not response.tool_calls:
+        print("不需要调用工具")
+        break
+
+    for tool_call in response.tool_calls:
+        if tool_call["name"] == "get_stock_price":
+            stock_result = get_stock_price.invoke(tool_call)
+            print(stock_result)
+            message_list.append(stock_result)
+        elif tool_call["name"] == "search_news":
+            news_result = search_news.invoke(tool_call)
+            print(news_result)
+            message_list.append(news_result)
+
+for msg in message_list:
+    rprint(msg)
+```
+
+## 3. 实践经验
+1. 清晰的描述
+   docstring
+   自定义args_schema
+
+2. 功能单一
+   一个工具只负责一个功能
+
+3. 如何处理工具失败
+   工具内部处理
+   agent级重试 使用prompt
+   调用级重试 @retry 执行报错retry自动拦截 重新触发
+
+4. 返回字符串
+   避免LLM胡思乱想 采用其他编码格式
+
+5. 同步 和 异步
+   同步 CPU密集型
+   异步 IO密集型
+
+# 第六章 结构化输出 Structured Output
+## 1. 结构化输出概述
+### 1.1 什么是结构化输出
+结构化输出是指将模型的输出转换为结构化的数据格式，例如JSON、Pydantic、TypedDict等。
+更容易处理
+结果更稳定
+适合工程化 类型安全
+
+## 2. 四种模式
+### 2.1 Pydantic
+
+
+
+
+
 
 
 

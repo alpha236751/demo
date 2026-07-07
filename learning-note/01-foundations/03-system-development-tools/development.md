@@ -286,6 +286,23 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 ```
 
+### 4.1.5 tool 配置
+```shell
+# 临时运行工具
+uv tool run ruff
+# 全局安装工具
+uv tool install ruff
+# 卸载工具
+uv tool uninstall ruff
+# 查看已安装工具
+uv tool list
+# 更新工具
+uv tool upgrade ruff
+# 将工具目录添加到 Shell 的 PATH 中
+uv tool update-shell
+# 查看工具目录
+uv tool dir
+```
 
 
 
