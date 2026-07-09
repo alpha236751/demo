@@ -839,6 +839,454 @@ for msg in message_list:
 ### 2.1 Pydantic
 
 
+# 第十章 RAG
+## 1. Retrieval
+### 1.1 大模型局限
+- 知识滞后 训练数据有截至日期
+- 知识缺失 依赖网络上公开静态数据
+- 幻觉 
+
+### 1.2 RAG优缺点
+优点：
+- 相比提示词工程 有丰富上下文和数据样本 不需要用户提供过多背景描述
+- 相比微调 提升回答的时效性 和 可靠性
+- 一定程度保护了企业业务数据隐私
+缺点：
+- 每次回答涉及外部系统数据检索 响应时延较高
+- 引用外部知识数据 消耗大量token
+
+### 1.3 工作流程
+1. 数据源Source
+2. 加载Load
+   文档加载器Document Loaders -> Document对象
+3. 转换Transform
+   文档转换器Document Transformers
+4. 嵌入Embed
+   文档嵌入模型Text Embedding models
+5. 存储Store
+6. 检索Retrieve
+
+## 2. 工作流程
+### 2.1 文档加载器 Document Loaders
+#### 2.1.1 加载txt
+```python
+from langchain_community.document_loaders import TextLoader
+
+loader = TextLoader(
+file_path="../asset/load/01-langchain-utf-8.txt",
+encoding="utf-8",
+)
+docs = loader.load() # 返回文档列表
+print(docs[0].page_content)
+```
+
+#### 2.1.2 CSV
+```python
+from langchain_community.document_loaders import CSVLoader
+
+loader = CSVLoader(
+    file_path="../asset/load/02-load.csv",
+    encoding="utf-8",
+)
+docs = loader.load() # 返回文档列表
+print(docs[0].page_content)
+```
+
+#### 2.1.3 JSON
+```python
+from langchain_community.document_loaders import JSONLoader
+
+# 情况1
+loader = JSONLoader(
+    file_path="../asset/load/03-load.json",
+    jq_schema=".", # 提取所有字段
+    text_content=False, # True表示 要求jq提取为字符串 
+)
+
+# 情况2
+loader = JSONLoader(
+    file_path="../asset/load/03-load.json",
+    jq_schema=".messages[].content", # 提取messages内的所有content字段
+    # text_content=False, # True表示 要求提取到的内容为字符串
+)
+# 情况3
+loader = JSONLoader(
+    file_path="../asset/load/03-response.json",
+    jq_schema="""
+        .data.items[] | {
+            author,
+            created_at: .created_at,
+            content: (.title + "\n" + .content),
+        }
+        """, # 提取拼接
+    text_content=False,
+)
+```
+
+#### 2.1.4 PDF
+1. 方式1 PyPDFLoader
+```python
+from langchain_community.document_loaders import PyPDFLoader
+
+loader = PyPDFLoader(
+    file_path="../asset/load/04-sample.pdf",
+    extraction_mode="plain", # 默认plain 提取文本 layout 感知布局提取
+)
+docs = loader.load() # 返回文档列表
+print(len(docs))
+```
+2. 方式2 MinerU
+MinerU提供了PDF、Word、PPT、图片等文件解析，支持图像提取、OCR、公式、表格解析等功能。
+```python
+import os
+import time
+import requests
+from dotenv import load_dotenv
+
+# 预先获取MINERU_API_TOKEN，后续请求直接使用token
+load_dotenv(override=True)
+
+
+def upload_files(file_paths: list[str]) -> str:
+    """批量上传文件"""
+    url = "https://mineru.net/api/v4/file-urls/batch"
+    api_token = os.getenv("MINERU_API_TOKEN")
+    header = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_token}",
+    }
+
+    files_info = [
+        {
+            "name": os.path.basename(file_path),
+            "is_ocr": True,
+            "data_id": f"file_{i}",
+        }
+        for i, file_path in enumerate(file_paths)
+    ]
+
+    data = {
+        "enable_formula": True,
+        "enable_table": True,
+        "language": "ch",
+        "files": files_info,
+    }
+
+    try:
+        response = requests.post(url, headers=header, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            print("response success. result:{}".format(result))
+
+            if result["code"] == 0:
+                batch_id = result["data"]["batch_id"]
+                urls = result["data"]["file_urls"]
+                print("batch_id:{}\nurls:{}".format(batch_id, urls))
+
+                for i in range(0, len(urls)):
+                    with open(file_paths[i], "rb") as f:
+                        res_upload = requests.put(urls[i], data=f)
+                        if res_upload.status_code == 200:
+                            print(f"{urls[i]} upload success")
+                        else:
+                            print(f"{urls[i]} upload failed")
+                            return None
+
+                return batch_id
+            else:
+                print("apply upload url failed, reason:{}".format(result.get("msg")))
+                return None
+        else:
+            print(
+                "response not success. status:{} ,result:{}".format(
+                    response.status_code, response.text
+                )
+            )
+            return None
+
+    except Exception as err:
+        print(err)
+        return None
+
+
+def download_files(batch_id):
+    """批量获取任务结果"""
+    if not batch_id:
+        print("batch_id为空，跳过下载")
+        return
+
+    os.makedirs("parsed_files", exist_ok=True)
+
+    url = f"https://mineru.net/api/v4/extract-results/batch/{batch_id}"
+    api_token = os.getenv("MINERU_API_TOKEN")
+    header = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_token}",
+    }
+
+    failed_files = set()
+    done_files = set()
+
+    while True:
+        res = requests.get(url, headers=header)
+        result_json = res.json()
+
+        if res.status_code != 200 or result_json.get("code") != 0:
+            print("get result failed:", result_json)
+            break
+
+        extract_results = result_json["data"]["extract_result"]
+
+        for result in extract_results:
+            data_id = result["data_id"]
+
+            if result["state"] == "failed":
+                failed_files.add(data_id)
+
+            elif result["state"] == "done" and data_id not in done_files:
+                done_files.add(data_id)
+
+                full_zip_url = result["full_zip_url"]
+                res_download = requests.get(full_zip_url, stream=True)
+
+                with open(
+                    f"parsed_files/{result['file_name']}_{result['data_id']}.zip", "wb"
+                ) as f:
+                    for chunk in res_download.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+
+        if len(failed_files) + len(done_files) == len(extract_results):
+            break
+
+        time.sleep(5)
+
+    for i in failed_files:
+        print("failed:", i)
+
+    for i in done_files:
+        print("done:", i)
+
+
+file_paths = ["../asset/load/04-sample.pdf"]
+batch_id = upload_files(file_paths)
+
+if batch_id:
+    download_files(batch_id)
+```
+
+#### 2.1.5 word(docx)
+```python
+loader = UnstructuredWordDocumentLoader(
+    file_path="asset/load/05-ssg_chat.docx",
+    mode="single", # single返回单个文档 elements按标题等元素切分文档
+)
+```
+
+#### 2.1.6 markdown
+```python
+loader = UnstructuredMarkdownLoader(
+    file_path="asset/load/06-ssg_chat.md",
+    mode="single", # single返回单个文档 elements按标题等元素切分文档
+    strategy="fast", # 快速解析 hi_res 高分辨率有版面分析
+)
+```
+
+#### 2.1.7 HTML
+
+#### 2.1.8 File Directory
+
+### 2.2 文档切分器 Text Splitters
+#### 2.2.1 Chunking拆分策略
+- 根据句子切分
+- 按照固定字符数切分
+- 固定字符结合重叠窗口
+- 递归字符切分
+- 根据语义切分  
+
+### 2.3 文档嵌入模型 Text Embedding models
+#### 2.3.1 嵌入模型选择和初始化
+```python
+from langchain.embeddings import init_embeddings
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv(override=True)
+
+embedding_model = init_embeddings(
+    model="openai:text-embedding-3-large",
+    api_key=os.getenv("CLOSEAI_API_KEY"),
+    base_url=os.getenv("CLOSEAI_BASE_URL"),
+   )
+```
+#### 2.3.2 嵌入模型调用
+```python
+# 句子向量化 返回一个向量
+embedding_model.embed_query("你好")
+# 文档向量化 返回向量列表
+embedding_model.embed_documents(["你好", "你好吗"])
+```
+
+### 2.4 向量存储Vector Stores
+#### 2.4.1 常用向量数据库
+- FAISS 
+- Chroma
+- Milvus
+- Redis
+
+## 3 milvus
+### 3.1 安装
+```bash
+docker-compose up -d
+
+pip install pymilvus
+```
+
+### 3.2 数据模型
+- Database 数据库 隔绝不同业务
+- Collection 集合 类似数据库的表
+- Partition 分区 collection的子集 一个collection默认至少有一个partition
+- Entity 实体 类似数据库的一行数据
+
+### 3.3 基本用法
+#### 3.3.1 DDL
+1. 数据库相关
+```python
+from pymilvus import MilvusClient
+
+# 创建客户端
+client = MilvusClient(
+    uri="http://8.217.149.47:19530",
+)
+# 列出所有数据库
+print(client.list_databases())
+# 创建数据库
+client.create_database(db_name="test_db")
+# 删除数据库 必须先删除所有collection
+client.drop_database(db_name="test_db")
+```
+
+2. collection相关
+```python
+# 切换到指定数据库
+client.use_database("edu_database1")
+# 列出所有collection
+print(client.list_collections())
+# 创建collection 默认id设为主键 开启动态添加字段
+client.create_collection(
+    collection_name="edu_collection1", # 集合名称
+    dimension=5, # 向量维度
+    metric_type="COSINE", # 相似度指标
+)
+# 删除collection
+client.drop_collection(collection_name="edu_collection1")
+```
+#### 3.3.2 DML
+```python
+# 查看collection元数据(表结构)
+print(client.describe_collection(collection_name="edu_collection1"))
+# 向量化
+vectors = embedding_model.embed_documents(texts)
+data = [
+        {"id": 0, "vector": [0.3580376395471989, -0.6023495712049978, 0.18414012509913835, -0.26286205330961354,
+                             0.9029438446296592], "color": "pink_8682"},
+        {"id": 1, "vector": [0.19886812562848388, 0.06023560599112088, 0.6976963061752597, 0.2614474506242501,
+                             0.838729485096104], "color": "red_7025"},
+        {"id": 2, "vector": [0.43742130801983836, -0.5597502546264526, 0.6457887650909682, 0.7894058910881185,
+                             0.20785793220625592], "color": "orange_6781"},
+        {"id": 3, "vector": [0.3172005263489739, 0.9719044792798428, -0.36981146090600725, -0.4860894583077995,
+                             0.95791889146345], "color": "pink_9298"},
+        {"id": 4, "vector": [0.4452349528804562, -0.8757026943054742, 0.8220779437047674, 0.46406290649483184,
+                             0.30337481143159106], "color": "red_4794"},
+        {"id": 5, "vector": [0.985825131989184, -0.8144651566660419, 0.6299267002202009, 0.1206906911183383,
+                             -0.1446277761879955], "color": "yellow_4222"},
+        {"id": 6, "vector": [0.8371977790571115, -0.015764369584852833, -0.31062937026679327, -0.562666951622192,
+                             -0.8984947637863987], "color": "red_9392"},
+        {"id": 7, "vector": [-0.33445148015177995, -0.2567135004164067, 0.8987539745369246, 0.9402995886420709,
+                             0.5378064918413052], "color": "grey_8510"},
+        {"id": 8, "vector": [0.39524717779832685, 0.4000257286739164, -0.5890507376891594, -0.8650502298996872,
+                             -0.6140360785406336], "color": "white_9381"},
+        {"id": 9, "vector": [0.5718280481994695, 0.24070317428066512, -0.3737913482606834, -0.06726932177492717,
+                             -0.6980531615588608], "color": "purple_4976"}
+    ]
+# 插入数据
+res = client.upsert(
+    collection_name="edu_collection1",
+    data=data,
+)
+# {'upsert_count': 10, 'ids': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+print(res)
+# 手动刷新collection
+client.flush(collection_name="edu_collection1")
+# 查看collection统计信息
+stats = client.get_collection_stats(collection_name="edu_collection1")
+print(stats)
+```
+#### 3.3.3 DQL
+1. 扫描数据
+```python
+from rich import print as rich_print
+iterator = client.query_iterator(
+    collection_name="edu_collection1",
+    filter="", # where
+    output_fields=["*"], # select
+)
+# 返回一个只能被遍历一次的迭代器？
+while True:
+    item = iterator.next()
+    if not item:
+        break
+    rich_print(item)
+```
+2. 通过主键查询
+```python
+res = client.get(
+    collection_name="edu_collection1",
+    ids=[0, 1, 2],
+)
+for i in res:
+    print(i)
+```
+3. 相似度查询
+- 单向量查询
+- 批向量查询
+- 分区查询 partition_names=["partitionA"] 
+- 使用输出字段查询 search_params={"metric_type": "IP", "params": {}}
+- 过滤查询 filter='color like "red%"'
+- 范围查询 search_params=search_params,
+```json
+search_params = {
+        "metric_type": "IP",
+        "params": {
+            "radius": 0.8,  # 搜索圆的半径
+            "range_filter": 1  # 范围过滤器，用于过滤出不在搜索圆内的向量。
+        }
+    }
+```
+```python
+result = client.search(
+    collection_name="edu_collection1",
+    data=[[0.19886812562848388, 0.06023560599112088, 0.6976963061752597, 0.2614474506242501, 0.838729485096104]],
+    limit=2, # 返回2条
+    output_fields=["*"], # 返回所有字段
+) # 返回一个二维列表，每行是一个向量的搜索结果
+for i in result[0]:
+    print(i)
+```
+
+#### 3.3.4 混合检索
+要对两组 ANN(Approximate Nearest Neighbor Search,近似最近邻搜索) 搜索结果进行合并和重新排序，
+有必要选择适当的重新排序策略。支持两种重排策略：加权排名策略（WeightedRanker）和倒数排序融合（RRFRanker）。
+在选择重排策略时，需要考虑的一个问题是，在向量场中是否需要强调一个或多个基本 ANN 搜索。
+
+
+
+
+
+
+
+
 
 
 
