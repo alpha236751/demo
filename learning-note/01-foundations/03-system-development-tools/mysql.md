@@ -476,3 +476,6 @@ select * from employee where (job, salary) in (select job, salary from employee 
 -- 查询入职日期是2006-01-01之后的员工，及其部门信息
 select e.*, d.* from (select * from employee where entrydate > '2006-01-01') as e left join dept as d on e.dept = d.id;
 ```
+### 三、 SQL进阶
+#### 1. 索引
+
