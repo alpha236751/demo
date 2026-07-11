@@ -42,7 +42,7 @@ EXPIRE key seconds # 设置键过期时间
 TTL key # 获取键过期时间
 TYPE key # 获取键类型
 KEYS pattern # 查找匹配模式的键 生产环境慎用
-SCAN cursor # 增量迭代键 生产环境替代 KEYS
+SCAN cursor # 增量迭代键 生产环境替代KEYS 渐进的非阻塞的返回结果 cursor是游标0表示从头开始
 ```
 
 ## 系统操作

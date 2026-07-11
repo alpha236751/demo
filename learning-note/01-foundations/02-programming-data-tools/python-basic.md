@@ -189,3 +189,29 @@ asyncio.run(main())
 通过组合类或对象来形成更大的结构，确保系统结构灵活高效
 #### c.行为型模式 (Behavioral Patterns)
 描述对象之间如何通信、协作以及分配职责，使复杂流程更清晰
+
+### 16. 模块导入
+- 绝对导入
+  `from module import function`
+  从sys.path中查找模块 
+- 相对导入
+  `from . import module`
+  从module.__package__中查找模块module
+
+python module.py 脚本运行 
+sys.path[0] 为脚本所在目录
+__name__为__main__ 
+__package__为None 不支持相对导入
+
+python -m module 模块运行
+sys.path[0] 为当前工作目录
+__package__为module所在层级 支持相对导入
+
+### 17. 异常处理
+
+1. raise 
+- **强制触发异常** 当检测到不符合预期的条件时，主动抛出异常，阻止后续无效逻辑的执行。
+- **捕获异常后重新抛出** 在 except 块中，你可以处理部分逻辑，但决定不处理这个错误，将其原样抛给上层。   
+- **异常链** 当你捕获一个底层异常，想抛出一个更上层、更通用的业务异常时，使用 raise ... from ... 可以保留底层错误的根源。
+  
+  
