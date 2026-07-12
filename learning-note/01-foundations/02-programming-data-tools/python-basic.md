@@ -191,20 +191,20 @@ asyncio.run(main())
 描述对象之间如何通信、协作以及分配职责，使复杂流程更清晰
 
 ### 16. 模块导入
-- 绝对导入
+- 绝对导入 (没有`.`)
   `from module import function`
-  从sys.path中查找模块 
-- 相对导入
+  从sys.path中查找模块 主要包含 当前工作目录 标准库目录 第三方库目录
+
+- 相对导入 (有`.` 必须以from开头) 
   `from . import module`
   从module.__package__中查找模块module
 
 python module.py 脚本运行 
-sys.path[0] 为脚本所在目录
-__name__为__main__ 
+sys.path[0] 工作目录为 **脚本所在目录**
 __package__为None 不支持相对导入
 
 python -m module 模块运行
-sys.path[0] 为当前工作目录
+sys.path[0] 工作目录为 **当前路径**
 __package__为module所在层级 支持相对导入
 
 ### 17. 异常处理

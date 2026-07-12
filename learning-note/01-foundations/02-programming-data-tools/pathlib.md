@@ -34,7 +34,8 @@ print(file.suffixes)    # ['.csv'] (如果有多个后缀如 .tar.gz，会列出
 print(file.parent)      # /home/user/data (父目录)
 print(file.parents[0])  # 同上，parents 可索引多级父目录，parents[1] 返回 /home/user
 print(file.parents[1])  # /home/user
-print(file.anchor)      # / (根目录锚点，Windows 下返回 'C:\\')
+print(file.anchor)      # / (根目录锚点，Windows 下返回 '\')
+print(file.parts) # ('\\', 'home', 'user', 'data', 'sample.csv')
 ```
 
 ---
@@ -62,18 +63,16 @@ print(p.stat())      # 返回 os.stat_result 对象，包含大小、修改时�
 for file in Path(".").glob("*.txt"):
     print(file)
 
-# 查找项目下所有 .py 文件（递归所有子文件夹）—— 相当于 os.walk + 筛选
+# 查找项目下所有 .py 文件（递归所有子文件夹）
 for py_file in Path("project").rglob("*.py"):
     print(py_file)  # 直接打印路径对象
 ```
 
-- **`.walk()`**（Python 3.12+ 新增，完全对标 `os.walk`，但返回对象更直观）：
+- **`.iterdir()`**（完全对标 `os.walk`，但返回对象更直观）：
 ```python
-for root, dirs, files in Path("my_project").walk():
-    # root 是 Path 对象，dirs 和 files 是 Path 对象列表
-    for file in files:
-        if file.suffix == ".md":
-            print(root / file)  # 拼接并打印
+for child in Path(".").iterdir():
+    if child.suffix == ".md":
+        print(child)  # 直接打印路径对象
 ```
 
 ---
@@ -132,12 +131,12 @@ print(p.relative_to("/home/user"))  # 返回相对路径: docs/readme.md
 当你需要把 `Path` 传给只接受字符串的旧函数时，直接转成字符串即可：
 
 ```python
-p = Path("data.csv")
+p = Path("/home/user/data/sample.csv")
 
 # 转成字符串
-str_path = str(p)  # 'data.csv'
+str_path = str(p)  # '\\home\\user\\data\\sample.csv'
 
 # 转成字节（用于底层系统调用）
-bytes_path = bytes(p)
+bytes_path = bytes(p) # b'\\home\\user\\data\\sample.csv'
 ```
 
