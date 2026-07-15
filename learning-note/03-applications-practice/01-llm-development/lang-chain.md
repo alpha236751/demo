@@ -1150,7 +1150,7 @@ pip install pymilvus
 - Entity 实体 类似数据库的一行数据
 
 ### 3.3 基本用法
-#### 3.3.1 DDL
+#### 3.3.1 DDL 数据定义
 1. 数据库相关
 ```python
 from pymilvus import MilvusClient
@@ -1161,28 +1161,61 @@ client = MilvusClient(
 )
 # 列出所有数据库
 print(client.list_databases())
+# 查看指定数据库信息
+print(client.describe_database(db_name="test_db"))
 # 创建数据库
 client.create_database(db_name="test_db")
+# 使用数据库
+client.use_database(db_name="my_database_2")
 # 删除数据库 必须先删除所有collection
 client.drop_database(db_name="test_db")
 ```
 
 2. collection相关
 ```python
-# 切换到指定数据库
-client.use_database("edu_database1")
 # 列出所有collection
 print(client.list_collections())
-# 创建collection 默认id设为主键 开启动态添加字段
+# 创建collection 需要创建schema 设置index 创建collection
+# 创建schema
+schema = MilvusClient.create_schema(enable_dynamic_fields=True)
+# 添加主字段
+schema.add_field(
+    field_name="my_id",
+    datatype=DataType.INT64, # 只接受Int64或VarChar值
+    is_primary=True, # 主字段
+    auto_id=False,
+)
+# 添加向量字段 接受各种稀疏和密集向量嵌入 一个Collections最多添加四个向量字段
+# SPARSE_FLOAT_VECTOR 稀疏向量
+schema.add_field(
+    field_name="my_vector",
+    datatype=DataType.FLOAT_VECTOR, 
+    dim=5 # 向量嵌入的维数
+)
+# 添加标量字段 包括VarChar、Boolean、Int、Float 和Double
+schema.add_field(
+    field_name="my_varchar",
+    datatype=DataType.VARCHAR,
+    max_length=512
+)
+# 为向量字段设置索引参数
+index_params = client.prepare_index_params()
+index_params.add_index(
+    field_name="dense_vector", # 字段名
+    index_name="dense_vector_index", # 索引名
+    index_type="AUTOINDEX", # 索引类型
+    metric_type="IP" # 相似度指标 IP CONSIN L2
+)
+# 创建collection
 client.create_collection(
-    collection_name="edu_collection1", # 集合名称
-    dimension=5, # 向量维度
-    metric_type="COSINE", # 相似度指标
+    collection_name="my_collection",
+    schema=schema,
+    index_params=index_params
 )
 # 删除collection
 client.drop_collection(collection_name="edu_collection1")
 ```
-#### 3.3.2 DML
+#### 3.3.2 DML 数据操作
 ```python
 # 查看collection元数据(表结构)
 print(client.describe_collection(collection_name="edu_collection1"))
@@ -1210,7 +1243,8 @@ data = [
         {"id": 9, "vector": [0.5718280481994695, 0.24070317428066512, -0.3737913482606834, -0.06726932177492717,
                              -0.6980531615588608], "color": "purple_4976"}
     ]
-# 插入数据
+# 插入数据 upsert 找得到主键就更新 找不到就插入
+
 res = client.upsert(
     collection_name="edu_collection1",
     data=data,
@@ -1223,7 +1257,7 @@ client.flush(collection_name="edu_collection1")
 stats = client.get_collection_stats(collection_name="edu_collection1")
 print(stats)
 ```
-#### 3.3.3 DQL
+#### 3.3.3 DQL 数据查询
 1. 扫描数据
 ```python
 from rich import print as rich_print
@@ -1279,6 +1313,8 @@ for i in result[0]:
 要对两组 ANN(Approximate Nearest Neighbor Search,近似最近邻搜索) 搜索结果进行合并和重新排序，
 有必要选择适当的重新排序策略。支持两种重排策略：加权排名策略（WeightedRanker）和倒数排序融合（RRFRanker）。
 在选择重排策略时，需要考虑的一个问题是，在向量场中是否需要强调一个或多个基本 ANN 搜索。
+
+### 3.4 向量索引
 
 
 

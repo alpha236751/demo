@@ -8,8 +8,18 @@
  
 #### 2. MySQL 简介
 ##### 2.1 安装  
-##### 2.2 停止和启动
+红帽系 CentOS
+`yum insatll mysql-server`
 
+##### 2.2 停止和启动
+###### 2.2.1 Linux
+`systemctl start mysqld` # 启动服务 注意服务名
+`systemctl status mysqld` # 查看状态
+> 默认密码 根据系统不同 有所差别
+`mysql -u root -p` # 进入mysql
+`quit` # 退出mysql
+
+###### 2.2.2 Windows
 1.服务器（以管理员方式打开命令行窗口）：
 - 启动：`net start mysql80`
 - 停止：`net stop mysql80`
@@ -54,7 +64,7 @@
 查询指定表的建表语句
 `SHOW CREATE TABLE 表名;`
 ##### 3.3 DDL-表操作-创建
-```
+```sql
 CREATE TABLE 表名(
     字段1 字段1类型 [COMMENT 字段1注释],
     字段2 字段2类型 [COMMENT 字段2注释],
@@ -144,7 +154,7 @@ CREATE TABLE 表名(
 
 #### 5.数据查询语言DQL
 ##### 5.1 DQL-语法
-```
+```sql
 SELECT
         字段列表
 FROM
@@ -234,14 +244,14 @@ LIMIT
 #### 6.数据控制语言DCL
 ##### 6.1 DCL-管理用户
 查询用户
-```
+```sql
 USE mysql;
-SELECT * FROM user;
+SELECT Host, User FROM user; # 查看主机和用户
 ```
 创建用户
 `CREATE USER '用户名'@'主机名' IDENTIFIED BY '密码';`
 修改用户密码
-```
+```sql
 -- MySQL 5.7.6 及以上版本使用
 ALTER USER '用户名'@'主机名' IDENTIFIED [WITH mysql_native_password] BY '新密码';
 
@@ -334,7 +344,7 @@ SET PASSWORD FOR '用户名'@'主机名' = PASSWORD('new_password');
 |外键约束|用来让两张图的数据之间建立连接，保证数据的一致性和完整性|FOREIGN KEY|
 > 约束是作用于表中字段上的，可以在创建表/修改表的时候添加约束
 > 有些情况下，虽然数据没有成功添加，但仍然会占用自动增长一个值，比如事务回滚；违反约束条件或数据类型不匹配等导致插入操作失败
-```
+```sql
 create table user(
         id int primary key auto_increment,
         name varchar(10) not null unique,
@@ -347,7 +357,7 @@ create table user(
 外键用来让两张表之间建立连接，从而保证数据的一致性和完整性
 1.语法
 添加外键
-```
+```sql
 CREATE TABLE 表名(
         字段名 字段类型,
         ...
@@ -421,7 +431,7 @@ CREATE TABLE 表名(
 自连接查询，可以是内连接查询，也可以是外连接查询
 ##### 8.6 联合查询-union, union all
 把多次查询的结果合并，形成一个新的查询集
-```
+```sql
 SELECT 字段列表 FROM 表A ...
 UNION [ALL]
 SELECT 字段列表 FROM 表B ...
@@ -470,12 +480,94 @@ SQL语句中嵌套SELECT语句，称谓嵌套查询，又称子查询
 返回的结果是多行多列
 常用操作符：IN
 示例：
-```
+```sql
 -- 查询与xxx1，xxx2的职位和薪资相同的员工
 select * from employee where (job, salary) in (select job, salary from employee where name = 'xxx1' or name = 'xxx2');
 -- 查询入职日期是2006-01-01之后的员工，及其部门信息
 select e.*, d.* from (select * from employee where entrydate > '2006-01-01') as e left join dept as d on e.dept = d.id;
 ```
+
+#### 9.事务
+事务是一组操作的集合，一个不可分割的工作单位
+##### 9.1 事务操作
+```sql
+# 查看是否开启自动提交事务 关闭后运行代码不会立刻执行 直到提交事务
+select @@autocommit;
+set @@autocommit = 0;
+# 手动开启事务
+start transaction;
+# 提交事务
+commit;
+# 回滚事务
+rollback;
+```
+#### 9.2 事务四大特性ACID
+1. 原子性Atomicity
+2. 一致性Consistency
+3. 隔离性Isolation
+4. 持久性Durability
+#### 9.3 并发事务问题
+1. 脏读 一个事务读到另一个事务还没有提交的数据
+2. 不可重复读 两次事务先后读取的数据不同
+3. 幻读 查不到 在插入时又出现了
+#### 9.4 事务隔离级别
+
 ### 三、 SQL进阶
-#### 1. 索引
+#### 1. 存储引擎
+##### 1.1 MySQL体系结构
+1. 客户端连接器
+   Python PHP .NET 
+2. 连接层
+   完成与客户端的连接与认证授权
+3. 服务层
+   所有跨存储引擎的功能，如存储过程、触发器、视图等，都在这一层实现
+   - 分析器 对SQL语句进行词法分析和语法分析
+   - 优化器 决定SQL语句的执行计划
+   - 执行器 真正执行SQL语句的模块
+4. 引擎层
+   负责数据的存储和提取 可插拔存储引擎
+5. 存储层
+   数据最终存储在磁盘上
+##### 1.2 存储引擎简介
+默认存储引擎 为 InnoDB
+```sql
+show engines; # 查看所有引擎
+create table xxx() engine = MyISAM; # 建表时选择存储引擎
+```
+##### 1.3 InnoDB
+支持事务、外键、行级锁
+每张表对应一个 表空间文件 存储 表结构 数据 索引
+innodb_file_per_table 是否一张表对应一个文件
+
+逻辑存储结构：
+表空间(table space) -> 段(segment) -> 区1M(extent) -> 页16K(page) -> 行(row)
+行对应 一行行的数据
+page 是 磁盘操作最小单元
+一个区可以包含64个页
+
+#### 2. 索引
+##### 2.1 索引结构
+1. B+树索引
+二叉搜索树BST -> 红黑树(自平衡的BST) -> B-Tree(多路平衡查找树) -> B+Tree
+2. Hash索引
+   - 拿到每行数据的hash值
+   - 对字段 用hash函数 得到 hash表 即要存储的槽位
+   - key字段名 ：value 行数据hash值
+3. 空间索引 处理地理坐标、几何图形等空间数据，支持范围、最近邻查询
+   R-Tree 
+4. 倒排索引 
+   基于词反向找id
+   - 对元信息进行分词 
+   - 对分词建立倒排表 记录 频率 和 分词所处位置
+5. 位图索引 用位（bit）表示数据存在与否
+
+##### 2.2 索引分类
+1. 主键索引 自动创建 PRIMARY
+2. 唯一索引 UNION
+3. 常规索引
+4. 全文索引 查找文本中的关键而不是比较索引的值 FULLTEXT
+
+InnoDB中：
+- 聚集索引 叶子节点存放行数据
+- 二级索引 叶子节点存放ID
 
