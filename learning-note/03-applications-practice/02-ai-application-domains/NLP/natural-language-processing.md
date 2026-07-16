@@ -402,3 +402,9 @@ Seq2Seq 模型由一个编码器-解码器架构组成
     - 贪心解码Greedy Decoding   每一步都选概率最高的        局部最优 生成不够多样
     - 束搜索Beam Search         每一步保留多个候选词序列    计算开销大
 
+## 4.4 案例
+collate_fn 整理函数 在构建数据集时使用
+`from torch.nn.utils.rnn import pad_sequence` 用于pad填充
+padding_idx=0 用于embedding 将索引 0 对应的向量永远输出为 0，并且在反向传播时，自动将该索引对应的梯度强制置为 0。
+ignore_index 用于损失函数 指定一个目标值，该值在计算损失时会被忽略，不参与损失计算，因此不会对输入梯度产生贡献
+NLTK 英文分词 提供评估指标
