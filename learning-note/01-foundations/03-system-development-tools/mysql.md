@@ -9,7 +9,7 @@
 #### 2. MySQL 简介
 ##### 2.1 安装  
 红帽系 CentOS
-`yum insatll mysql-server`
+`yum install mysql-server`
 
 ##### 2.2 停止和启动
 ###### 2.2.1 Linux
