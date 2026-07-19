@@ -35,6 +35,11 @@ tensorboard：可视化训练过程
 ruff: 代码格式化和语法检查
 ty: 类型检查
 
+## Agent
+三方api gpt-5.5 写入ccswitch
+ccswitch 启动
+codex官方扩展
+
 
 
 # 二、pytorch框架
