@@ -321,7 +321,7 @@ AIMessage(
 ) 
 ```
 
-## 5.2 stream
+### 5.2 stream
 返回迭代器
 ```python
 for chunk in model.stream(messages):
@@ -329,7 +329,7 @@ for chunk in model.stream(messages):
     print(chunk.text, end="", flush=True)
 ```
 
-## 5.3 batch
+### 5.3 batch
 
 ```python
 messages = [
@@ -344,7 +344,7 @@ for response in responses:
     print(response.content)
 ```
 
-## 5.4 异步调用
+### 5.4 异步调用
 ainvoke、astream、abatch 返回协程对象
 ```python
 import asyncio
