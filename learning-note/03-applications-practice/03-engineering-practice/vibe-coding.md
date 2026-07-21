@@ -1,4 +1,4 @@
-#  Vibe Coding：感觉驱动的编程新范式
+﻿#  Vibe Coding：感觉驱动的编程新范式
 Vibe Coding 是 AI 大牛 Andrej Karpathy（前OpenAI/Tesla AI主管）在2025年初提出的概念。他的原话是：
 > "完全沉浸在氛围中，拥抱指数级增长，忘记代码的存在。"
 
@@ -119,6 +119,7 @@ Then（预期结果）：页面只显示这5篇标记了"Python"标签的文章
 ```
 
 ## 技术规范：SPEC文档
+`specs/`
 SPEC（Technical Specification，技术规范文档）用于定义**怎么做**。
 
 ### 完整SPEC文档组成：
@@ -229,4 +230,45 @@ Claude、GPT 均支持该能力；
 3. 策略三：本地模型补充
 代码格式化、注释生成等轻量化任务，使用 Ollama 本地部署模型处理，零API调用费用。
 
-# 16
+# AI编程概念
+
+## LLM Loop
+大模型循环，你下达目标 → AI 自主拆解步骤 → 自动调用工具 → 查看执行结果 → 迭代下一步，循环直至任务全部完成。
+该模式将执行主动权完全交给AI。这套持续循环的「思考-行动-观察-再思考」闭环，被称作 **LLM Loop**，对应前文 `Plan-Act-Observe-Reflect` 自主决策循环。
+## Agentic Search
+智能体式检索，AI 实时自主遍历、检索、解析本地项目文件，自动梳理代码依赖与逻辑
+你的需求 → 浏览项目目录结构 → 读取关键文件 → 使用 `grep` 检索代码 → 跟进引用/调用关系 → 本地完整理解代码 → 执行开发任务
+## Harness
+`.harness/`
+模型能力决定下限，工具生态决定上限
+模型本身->
+项目上下文文件.md->
+会话生命周期钩子Hooks->
+专业知识包skills->
+Plugins(插件)skills+MCP+hooks打包分发->
+LSP(语言服务器)->
+MCP servers->
+Subagents(子代理)
+## Skill
+`.skills/`
+skill是一个封装了特定能力的可复用指令集，让AI能够精准、稳定完成特定任务的有效方法
+skill资源：
+- Anthropic官方skill
+    全局放user 项目放.claude/skills里
+    Vercel skills CLI安装
+    手动git clone
+- Vercel
+- 社区skill
+- skill聚合平台
+  
+superpowers：claudecode 生态中的 skills集合 让AI按固定方法做事
+prompt:这是我要安装的skill仓库链接xxx，请阅读README，说明安装位置和启动方式，确认后再修改我的配置
+
+## MCP(Model Context Protocol)
+让AI工具可以连接外部服务和数据源，提供扩展能力
+
+## Agents.md
+给AI的README
+
+
+

@@ -409,6 +409,27 @@ padding_idx=0 用于embedding 将索引 0 对应的向量永远输出为 0，并
 ignore_index 用于损失函数 指定一个目标值，该值在计算损失时会被忽略，不参与损失计算，因此不会对输入梯度产生贡献
 NLTK 英文分词 提供评估指标
 
+DataLoader 产出：
+inputs(batch,L_cn) L_cn中文序列长度 每批都可能不一样 V_cn中文词表大小
+targets(batch,L_en) L_en英文序列长度 V_en英文词表大小
+编码器：
+1. embedding : inputs(batch,L_cn)  -> (barch, L_cn, cn_embedding_dim)
+2. GRU : (batch, L_cn, cn_embedding_dim) + h_0 -> output(batch, L_cn, hiddene) h_n(layers, batch, hiddene)
+teacherforcing：
+decoder_inputs(batch, L_en-1) 去掉尾部的 <eos>
+decoder_targets(batch, L_en-1) 去掉头部的 <sos>
+decoder_h0(layer, batch, hiddene)由编码器输出升维得到 layer是1
+解码层：
+训练：以上下文向量作为初始隐状态 教师强制输入正确输入
+1. embedding:decoder_inputs(batch, L_en-1) -> (batch, L_en-1, en_embedding_dim)
+2. GRU(batch,L_en-1,embedding_dim) + h0(layer,batch,hiddene) -> output(batch,L_en-1,hiddend) + hn(layer,batch,hiddend)
+3. Linear(batch,L_en-1,hiddend) -> (batch, L_en-1, V_en)
+预测：以上下文向量作为初始隐状态，自回归循环 起点 <sos>
+1. Embedding(batch,1) -> (batch,1,en_embedding_dim)
+2. GRU input(batch,1,embedding) + h0(layer,batch,hiddene) -> output(batch,1,hiddend) + hn(layer,batch,hiddend)
+3. Linear (batch,1,hiddend) -> (batch, 1, V_en)
+4. argmax(batch, 1, V_en) -> (batch,1) next_token_ids
+
 ## 4.5 存在问题
 - 定长向量表示语义 容易导致信息在压缩过程中丢失
 - 始终基于同一个上下文向量进行生成 缺乏动态感知 无法选择性关注输入序列的不同部分 
@@ -421,16 +442,22 @@ NLTK 英文分词 提供评估指标
 在目标序列生成的每一步，解码器都会计算**当前时间步的隐藏状态**与编码器**各个时间步输出**之间的相关性。这些相关性衡量了源句中每个位置对当前生成内容的重要程度，从而决定模型应将多少注意力分配给不同的源位置。
 相关性的计算依赖于特定的函数，通常被称为**注意力评分函数**（attention scoring function）
 ### 5.2.2 注意力权重计算
-所有源位置的注意力评分，经Softmax归一化为概率分布，作为注意力权重
+所有源位置的注意力评分，经**Softmax**归一化为概率分布，作为注意力权重
 ### 5.2.3 上下文向量计算
-对编码器每个时间步隐藏状态 与 注意力权重 加权求和 ，得到上下文向量，表示当前时间步源句的关键信息
+对编码器每个时间步隐藏状态 与 注意力权重 **加权求和** ，得到上下文向量，表示当前时间步源句的关键信息
 ### 5.2.4 解码信息融合
-上下文向量 与 解码器当前时间步隐藏状态 拼接，通过线性变换和softmax生成当前时间步 目标词的概率分布
+上下文向量 与 解码器当前时间步隐藏状态 拼接，通过**线性变换和softmax**生成当前时间步 目标词的概率分布
 
 ## 5.3 注意力评分函数
 ### 5.3.1 点积评分（Dot）
 编码器每个时间步 与 解码器当前时间步 隐藏状态 的 点积
 两个向量方向越一致，点击就越大，相关性越强，给予注意力越多
+> 这里可能遇到编码器隐藏状态 和 解码器隐藏状态 长度不一致 无法点积的情况
 ### 5.3.2 通用点积评分（General）
+在点积评分的基础上，引入可学习的权重矩阵W，对编码器隐藏状态进行线性变换
+增强了模型对编码器输出的适应能力，提升了注意力表达能力
+### 5.3.3 拼接评分（Concat）
+将编码器每个时间步隐藏状态和解码器隐藏状态拼接为长向量，经线性变换和非线性激活，最后再用一个向量投影，得到最终打分值
 
+## 5.4 实战案例
 
