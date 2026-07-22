@@ -74,7 +74,7 @@ jieba分词
 缺点：
 - 维度灾难
 - 没有语义相似性
-- OOV (Out-of Vocabulary) 未知词
+- OOV (Out-of Vocabulary) 未登录词
 
 一些词袋模型：
 - TF-IDF 考虑词频和逆文档频率，对词进行加权，而不是单纯的0和1
