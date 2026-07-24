@@ -382,8 +382,9 @@ docker rmi 镜像ID
 
 #### 容器操作
 ```bash
-# 创建并启动容器 -d 后台运行 --name 容器名 -p 宿主机端口:容器端口 镜像名:标签
+# 创建并启动容器 -d  --name 容器名 -p 宿主机端口:容器端口 镜像名:标签
 docker run -d --name web -p 80:80 nginx:1.25
+docker run -d --name my-postgres -e POSTGRES_PASSWORD=123456 -p 5432:5432 postgres
 # 查看所有容器 Process Status --all
 docker ps -a
 # 停止容器
