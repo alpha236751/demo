@@ -375,15 +375,16 @@ systemctl enable docker
 #### 镜像操作
 ```bash
 docker search nginx
-docker pull nginx:1.25
-docker images
-docker rmi 镜像ID
+docker pull <docker.io>/library/nginx:1.25 # 仓库地址(默认官方) 命名空间(官方镜像可省略) 镜像：标签
+docker images # 查看下载的镜像
+docker rmi 镜像ID/镜像名 # 删除镜像
 ```
 
 #### 容器操作
 ```bash
-# 创建并启动容器 -d  --name 容器名 -p 宿主机端口:容器端口 镜像名:标签
+# 创建并启动容器 -d  --name 容器命名 -p 宿主机端口:容器端口 镜像名:标签
 docker run -d --name web -p 80:80 nginx:1.25
+# -e 传递环境变量
 docker run -d --name my-postgres -e POSTGRES_PASSWORD=123456 -p 5432:5432 postgres
 # 查看所有容器 Process Status --all
 docker ps -a
@@ -423,8 +424,12 @@ docker volume inspect mydata
 ```
 
 ### Docker 网络
-- bridge 创建虚拟网桥 每个容器分配私有IP连接到网桥上 自定义bridge会将容器名解析为IP地址加端口 适合单宿主多容器
-- host 容器直接共享宿主机的IP地址和端口 容易端口冲突 有安全风险 适合单容器多端口
+- bridge 创建虚拟网桥 适合单宿主**多容器**
+  - 每个容器分配私有IP连接到网桥上 
+  - 外部访问依靠手动端口映射
+  - 容器之间可以自动解析域名 
+- host 适合**单容器**多端口
+  - 容器直接共享宿主机的IP地址和端口 容易端口冲突 有安全风险 
 - none 禁用网络
 ```bash
 # 查看所有网络
@@ -443,26 +448,131 @@ docker network connect [mynet] [app1]
 
 `compose.yaml` 示例：
 ```yaml
-name: myproject
+# 启动：docker-compose --env-file .env.local up -d
+# Docker Compose 文件格式版本声明
+version: "3.9"
+# 服务定义
 services:
-  db:
-    image: mysql:8.0
-    container_name: mysql
-    ports:
-      - "3306:3306"
+
+  # 服务
+  postgres:
+    # 使用的镜像及版本
+    image: postgres:15-alpine
+    # 容器名称 (若不指定，默认为 项目名_服务名_序号)
+    container_name: edu_agent_postgres
+    # 重启策略: 除非手动停止，否则总是尝试重启
+    restart: unless-stopped
+    # 环境变量 (Environment Variables)
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
+      # ${...} 表示取用外部环境变量的值  :- 如果该变量未定义或为空，则使用后面的默认值
+      POSTGRES_DB: ${DB_NAME:-eduagent}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGTZ: Asia/Shanghai
+    # 数据卷挂载 (Volumes) 用于持久化数据或同步代码
     volumes:
-      - db-data:/var/lib/mysql
-    restart: always
-    networks:
-      - back
+      # 命名卷  docker创建一个存储空间 用于从容器内同步数据
+      - postgres_data:/var/lib/postgresql/data
+      # 绑定挂载 宿主机：容器目录 :ro表示容器内只读 共享文件 用于需要主动修改宿主机文件的场景
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/01_init_db.sql:ro
+    # 端口映射
+    ports:
+      # 主机IP:宿主端口:容器端口
+      # 分所有网络，局域网网络，本机回环，公网网络 
+      - "5433:5432"
+    healthcheck:
+      # 检查命令
+      # 表示用 Shell 执行 PostgreSQL 自带的检测工具
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME:-eduagent}"]
+      interval: 10s # 每隔多久检查一次
+      timeout: 5s   # 单次检查的最大等待时间
+      retries: 5    # 连续失败多少次才判定为“不健康”
 
+  # ── etcd（Milvus 元数据存储，仅内部使用，不对外暴露端口）──
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.14
+    container_name: edu_agent_etcd
+    restart: unless-stopped
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+    # > 是 YAML 的折叠块语法，表示将多行文本合并成一行字符串
+    # 监听地址0.0.0.0 通告地址127.0.0.1
+    command: >
+      etcd
+      --advertise-client-urls=http://127.0.0.1:2379 
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    volumes:
+      - etcd_data:/etcd
+
+  # ── MinIO（Milvus 向量文件存储，仅内部使用，不对外暴露端口）──
+  minio:
+    image: minio/minio:latest
+    container_name: edu_agent_minio
+    restart: unless-stopped
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── Milvus 向量数据库（对外 19531，本机 19530 已占用）──
+  milvus:
+    image: milvusdb/milvus:v2.4.0
+    container_name: edu_agent_milvus
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379                 # 连内部 etcd
+      MINIO_ADDRESS: minio:9000                 # 连内部 MinIO
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19531:19530"
+    depends_on:
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+  # ── Attu（Milvus 可视化管理界面，对外 30000）──
+  attu:
+    image: zilliz/attu:v2.4.12
+    container_name: edu_agent_attu
+    restart: unless-stopped
+    environment:
+      # Attu 在 Docker 内部访问 Milvus，必须使用服务名 milvus:19530，不能写 localhost:19531
+      MILVUS_URL: milvus:19530
+      SERVER_PORT: "3000"
+      TZ: Asia/Shanghai
+    ports:
+      # 不写 127.0.0.1，默认绑定 0.0.0.0，外部可通过 http://192.168.88.100:30000 访问
+      - "30000:3000"
+    depends_on:
+      milvus:
+        condition: service_healthy
+
+# 声明 使用的 命名卷
 volumes:
-  db-data:
+  postgres_data:
+  etcd_data:
+  minio_data:
+  milvus_data:
 
-networks:
-  back:
 ```
 
 常用命令：
@@ -479,23 +589,26 @@ docker compose logs           # 查看所有容器日志
 # 基础镜像（推荐 alpine 或 slim 版本）
 FROM ubuntu:22.04
 
-# 更新并安装软件（合并 RUN 减少层数）
+# 切换到 xx 为工作目录
+WORKDIR /usr/src/app
+
+# 将代码文件 拷贝到 目标目录 [代码文件目录] [容器目录]
+COPY ./app /usr/src/app
+
+# 运行命令
 RUN apt-get update && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
-
-# 复制文件（优先 COPY，ADD 仅在自动解压或远程 URL 时使用）
-COPY ./app /usr/src/app
-WORKDIR /usr/src/app
 
 # 声明运行时端口（仅文档作用）
 EXPOSE 8080
 
-# 启动命令（CMD 可被覆盖，ENTRYPOINT 不易覆盖）
+# 容器启动命令（CMD 可被覆盖，ENTRYPOINT 不易覆盖）
 CMD ["python", "app.py"]
 ```
 
 构建：
 ```bash
+# 镜像名：版本号 .表示在当前文件夹构建
 docker build -t myapp:1.0 .
 docker build -f Dockerfile.dev -t myapp:dev .
 ```

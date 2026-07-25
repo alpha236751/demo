@@ -317,13 +317,32 @@ uv tool dir
 略
 
 
-# 六、ruff
+# 六、WSL
+## 6.1 安装WSL
+1. 检查win电脑是否开启虚拟化 (任务管理器-性能)
+2. 管理员打开cmd 
+   - `wsl --install` 首次执行时 安装WSL环境
+3. 重启
+   - `wsl -l -o` 列出当前可安装的linux发行版
+   - `wsl --install Ubuntu-22.04 --name ubuntu --location D:\wsl\ubuntu2204 --web-download` 
+        指定安装linux 命名 安装路径 绕过 Microsoft Store，直接从微软在线服务器 / GitHub 下载安装包。
+   - `wsl -l` 列出当前设备已安装的linux
+   - `wsl --update` 更新wsl到最新版
+4. 启动和退出
+   - `wsl <-d linux名称>` 启动linux
+   - `wsl --set-default linux名称` 设置为默认实例
+   - `exit` 退出
 
-1. 快速修复
-   在错误提示上点击
-2. 全部修复
-   打开命令面板，执行 `Ruff:Fix all auto-fixable problems`
-3. 格式化文档
-   format document shift + alt +f
-4. 组织导入
-   organize imports shift + alt + o
+## 6.2 准备工作
+```bash
+git --version
+python3 --version
+sudo apt update # 更新apt包管理工具索引
+sudo apt install python-is-python3
+```
+
+
+## 6.3 docker desktop
+1. 官网下载安装包
+2. `.\"Docker Desktop Installer.exe" install --installation-dir=D:\Docker` Powershell命令行指定安装路径
+3. `docker --version`

@@ -25,6 +25,7 @@
 ### 6. 装饰器
   `@property` ：getter方法，使方法像属性一样调用输出结果
   `@setter` ：setter方法，使方法像属性一样修改属性值
+  含参装饰器 = 3层嵌套。最外层拿参数，中间层拿函数，最内层包装逻辑。
 
 ### 7. 多态
   相比传统方法，使代码更灵活、更可扩展
@@ -232,13 +233,16 @@ __package__为module所在层级 支持相对导入
   名称修饰（Name Mangling）机制。它的目的是让该方法无法被轻易重写，常用于防止子类意外覆盖父类的方法。Python 解释器会把这个名字改写成 _ClassName__function 的形式。私有属性的读取通常使用`@property`装饰为方法
   
 ### 19. 异步上下文管理器
-把生成器变成上下文管理器：@contextmanager
+
+在 @contextmanager 装饰的生成器中，
+必须使用 try...finally，而不是仅将清理代码写在 yield 之后。
+因为如果 with 块内部抛出异常，yield 后面的普通代码根本不会执行，
+只有 finally 才能保证异常发生时资源依然被释放。
+
+1. 把生成器变成上下文管理器：@contextmanager
 ```python
 from contextlib import contextmanager
 
-# 把「一个带 yield 的生成器」直接变成「一个能用于 with 的上下文管理器」
-# **yield 之前**的代码 = 进入 with 时执行（准备）；
-# **yield 之后**的代码 = 离开 with 时执行（收尾）。
 @contextmanager
 def managed_resource():
     print("【准备】打开资源")     # 进入 with 时执行
@@ -249,8 +253,7 @@ with managed_resource() as res:
     print(f"正在使用：{res}")
 ```
 
-异步版 
-用“写协程函数”的简单方式，来创建一个支持 async with 的异步上下文管理器。
+2. 把异步生成器 变成上下文管理器 @asynccontextmanager
 ```py
 import asyncio
 from contextlib import asynccontextmanager
@@ -267,4 +270,40 @@ async def main():
         print("应用运行中……")
 
 asyncio.run(main())
+```
+
+3. 在上下文管理器内部驱动生成器
+```py
+def filter_lines(file_path, keyword):
+    # 这是一个生成器函数，惰性产出匹配的行
+    with open(file_path, 'r', encoding='utf-8') as f:  # 上下文管理器
+        for line in f:
+            if keyword in line:
+                yield line.strip()
+
+# 使用时，上下文管理（文件关闭）由生成器内部的 with 保证
+for result in filter_lines('huge.log', 'ERROR'):
+    print(result)  # 逐条处理，内存占用极小
+```
+
+4. 危险写法 （生成器未完全消耗时的泄露风险）
+```py
+def read_first_line(file):
+    with open('data.txt') as f:
+        return (line for line in f)  # 返回生成器，但 with 块已结束！
+
+# 调用时
+gen = read_first_line('data.txt')
+print(next(gen))  # 报错：I/O 操作在关闭的文件上
+```
+
+5. 使用 yield from 在生成器内部套一层 with（将清理责任转移给生成器）
+```py
+def read_first_line(file):
+    with open(file) as f:
+        yield from f  # 委托迭代，只要生成器还在循环中，with 就不会退出
+
+gen = read_first_line('data.txt')
+print(next(gen))  # 正常执行，因为此时生成器正卡在 with 块内部运行
+# 注意：如果只取第一行就丢弃 gen，生成器会被回收，文件随之关闭
 ```
