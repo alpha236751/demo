@@ -1,13 +1,13 @@
 # 一、vscode+python开发环境
 ## vscode扩展
-- chinese 中文汉化
+- chinese 1 中文汉化
 - python扩展 4
 - jupyter扩展 5
 - markdown扩展 2
-- trae 字节ai编程助手
-- EvenBetterTOML toml语法高亮
-- ruff 代码格式化和语法检查
-- ty 类型检查
+- EvenBetterTOML 1 toml语法高亮
+- codex 1
+- Container Tools 1 容器插件
+- SQLTools 2 数据库插件
 
 ## 解释器(有环境管理软件就不必要了)
 python解释器 清华镜像https://mirrors.tuna.tsinghua.edu.cn/python/
@@ -34,6 +34,21 @@ tensorboard：可视化训练过程
 **开发环境**：
 ruff: 代码格式化和语法检查
 ty: 类型检查
+
+## 配置Json
+```json
+{
+    // 关闭欢迎页
+    "workbench.startupEditor": "none",
+    // 自动保存
+    "files.autoSave": "afterDelay",
+    // GitHub Git协议：指定使用SSH协议 默认https协议
+    "github.gitProtocol": "ssh",
+    // git提交自动add
+    "git.enableSmartCommit": true,
+    "chat.disableAIFeatures": true,
+}
+```
 
 ## Agent
 三方api gpt-5.5 写入ccswitch
