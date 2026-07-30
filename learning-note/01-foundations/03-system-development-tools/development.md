@@ -165,7 +165,9 @@ Conda 从远程仓库下载库，核心渠道分为三类：
 ```shell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# 安装完成后，配置环境变量，重启 PowerShell 
+# (安装完成后，配置环境变量, 自动配置，可省略)
+
+# 重启 PowerShell 
 
 # 配置好环境变量后，检查安装是否成功
 uv --version
