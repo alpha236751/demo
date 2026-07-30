@@ -16,8 +16,8 @@
 
 ### 四、Git初始配置
 
-- 配置全局用户名和邮箱：`git config --global user.name "你的名字"`
-- 配置全局邮箱：`git config --global user.email "你的邮箱"`
+- 配置全局用户名和邮箱：`git config --global user.name alpha`
+- 配置全局邮箱：`git config --global user.email 2367517178@qq.com`
 - 查看配置：`git config --list`
 
 ### 五、Git仓库（Repository）
