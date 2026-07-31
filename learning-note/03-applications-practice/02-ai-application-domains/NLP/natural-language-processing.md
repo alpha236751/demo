@@ -785,3 +785,15 @@ Librayies 预训练工具库
 - Datasets 加载和处理数据集
 - Tokenizers 将文本转换位模型输入
 - Transformers
+
+## 8.1 预训练模型的加载和使用
+### 8.1.1 模型加载
+1. AutoModel类 用于自动下载和加载模型 只加载主干结构 没有输出层
+```python
+from transformers import AutoModel
+# .cache/huggingface/hub/modelname/snapshots/xxx/config.json+模型参数文件
+model = AutoModel.from_pretrained("")
+```
+2. AutoModelForXXX 类 自动添加适配任务的输出层
+### 8.1.2 模型输入输出
+看文档 或 forward方法
