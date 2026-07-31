@@ -341,8 +341,10 @@ uv tool dir
    - `wsl --install` 首次执行时 安装WSL环境
 3. 重启
    - `wsl -l -o` 列出当前可安装的linux发行版
-   - `wsl --install Ubuntu-22.04 --name ubuntu --location D:\wsl\ubuntu2204 --web-download` 
+   - `wsl --install Ubuntu-22.04 --name ubuntu --location D:\Env\wsl\ubuntu2204 --web-download` 
         指定安装linux 命名 安装路径 绕过 Microsoft Store，直接从微软在线服务器 / GitHub 下载安装包。
+   - `wsl --import-in-place Ubuntu-22.04 D:\Env\wsl\ubuntu2204\ext4.vhdx`
+         重新注册本地系统文件
    - `wsl -l` 列出当前设备已安装的linux
    - `wsl --update` 更新wsl到最新版
 4. 启动和退出
@@ -361,5 +363,5 @@ sudo apt install python-is-python3
 
 ## 6.3 docker desktop
 1. 官网下载安装包
-2. `.\"Docker Desktop Installer.exe" install --installation-dir=D:\Docker` Powershell命令行指定安装路径
+2. `.\"Docker Desktop Installer.exe" install --installation-dir=D:\Apps\dev\Docker` Powershell命令行指定安装路径
 3. `docker --version`

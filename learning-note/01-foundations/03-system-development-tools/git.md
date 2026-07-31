@@ -165,6 +165,8 @@ merge conflict 合并冲突
 - `ssh-keygen -t ed25519` 生成密钥对 type 指定密钥类型 默认RSA密钥类型
   - `-f <文件名>` 指定私钥保存路径和文件名，公钥会放在同目录的.pub文件 默认`~/.ssh/密钥类型`文件
   - `-p` 修改私钥密码 passphrase
+- 将`.pub`内容复制，在git远端仓库注册公钥
+- `ssh -T git@github.com` 测试连接
 
 ### 八、多人协作
 1. fork 将别人账号的仓库复制到自己账号上
