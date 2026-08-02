@@ -200,7 +200,8 @@ uv 提供两套工作流：**原生 uv 工作流（推荐）** 和 **pip 兼容�
 **原生 uv 工作流**
 ```shell
 # 1. 初始化项目（自动生成 pyproject.toml 和 .venv）
-uv init my_project -p 3.10
+uv init --name my_backend -p 3.10
+uv init --bare my_frontend -p 3.10
 cd my_project
 
 # 2. 添加依赖（自动创建/更新 .venv 和 uv.lock）

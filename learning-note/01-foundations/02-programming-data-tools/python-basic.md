@@ -307,3 +307,33 @@ gen = read_first_line('data.txt')
 print(next(gen))  # 正常执行，因为此时生成器正卡在 with 块内部运行
 # 注意：如果只取第一行就丢弃 gen，生成器会被回收，文件随之关闭
 ```
+
+### 20. `pip install -e .`
+
+1. 让代码能被别人（或其他程序）像使用标准工具一样方便地调用
+
+2. 正常安装`pip install .`会把你的代码复制到 Python 的第三方库目录（如 site-packages）中。而 -e 模式（即 --editable）不会复制代码，而是在 site-packages 里创建一个指向你项目当前目录的链接（.egg-link 文件）。
+
+3. 读取你项目根目录下的 pyproject.toml 或 setup.py 文件，自动检测并安装其中列出的所有第三方依赖包
+
+### 21. src/ 布局
+防止导入混乱
+
+```yaml
+# 告诉 Python 包在 src 目录下
+[tool.setuptools.package-dir]
+"" = "src"
+```
+```bash
+# cd到项目根目录 下有src/
+cd /path/to/my_project
+uv pip install -e .
+```
+```py
+# 推荐使用绝对导入
+import my_package
+print(my_package.__file__)
+```
+
+
+

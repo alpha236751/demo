@@ -443,12 +443,73 @@ docker network inspect [mynet]
 # 连接容器到自定义网络
 docker network connect [mynet] [app1]
 ```
+## 三、Dockerfile 构建镜像
 
-## 三、Docker Compose（批量管理）
+```dockerfile
+# 基础镜像
+FROM python:3.12-slim   
+# 拷贝 uv 工具，不手动安装              
+COPY --from=... /uv /uvx /bin/     
+# 设置环境变量 
+# 强制 uv 在安装包时使用复制（copy）模式  为了兼容跨层硬链接
+# 强制 Python 的 stdout 和 stderr 流为无缓冲（unbuffered）模式。 日志输出会实时打印到控制台
+ENV UV_LINK_MODE=copy PYTHONUNBUFFERED=1
+# cd到 /app 
+WORKDIR /app    
+# 拷依赖清单                      
+COPY pyproject.toml uv.lock ./    
+# 第一次：只装第三方依赖  不装项目源码
+RUN uv sync --frozen --no-dev --no-install-project   
+# 拷源码
+COPY src ./src                        
+RUN uv sync --frozen --no-dev   
+# 第二次：把项目也装进去      
+EXPOSE 8000
+# 启动 主程序
+CMD ["uv", "run", "uvicorn", ...]     
+```
+
+构建镜像：
+```bash
+# 镜像名：版本号 .表示在当前文件夹构建
+docker build -t myapp:1.0 .
+# -f 指定dockerfile文件名 默认文件名是Dockerfile
+docker build -f Dockerfile.dev -t myapp:dev .
+```
+
+## 四、Docker Compose（批量管理）
+
+常用命令：
+```bash
+docker compose up             # 启动服务 
+docker compose up -d          # 后台启动
+docker compose --env-file .env up -d
+
+docker compose down           # 停止并删除所有容器、网络
+docker compose down -v        # 停止并删除所有容器、网络 和 数据卷
+
+docker compose stop           # 停止所有容器
+docker compose stop           # 启动已停止的所有容器
+docker compose restart        # 重启所有服务
+
+docker compose ps             # 列出当前项目所有容器的状态
+
+docker compose logs           # 查看所有容器的日志输出
+docker compose logs -f        # 实时跟踪日志
+docker compose logs 服务名    # 查看指定服务的日志
+
+docker compose exec 服务名 命令 # 在运行中的容器内执行命令
+
+docker compose build          # 重新根据Dockerfile构建所有服务的镜像
+docker compose build 服务名    # 构建指定服务的镜像
+docker compose build --no-cache # 构建时不使用缓存
+docker compose pull           # 拉取所有服务所需的最新镜像
+docker compose push           # 推送构建好的镜像到仓库
+```
+
 
 `compose.yaml` 示例：
 ```yaml
-# 启动：docker-compose --env-file .env.local up -d
 # Docker Compose 文件格式版本声明
 version: "3.9"
 # 服务定义
@@ -575,41 +636,8 @@ volumes:
 
 ```
 
-常用命令：
-```bash
-docker compose up -d          # 后台启动
-docker compose down -v        # 停止并删除卷（数据会丢失）
-docker compose ps             # 查看所有容器
-docker compose logs           # 查看所有容器日志
-```
 
-## 四、Dockerfile 构建镜像
 
-```dockerfile
-# 基础镜像（推荐 alpine 或 slim 版本）
-FROM ubuntu:22.04
 
-# 切换到 xx 为工作目录
-WORKDIR /usr/src/app
 
-# 将代码文件 拷贝到 目标目录 [代码文件目录] [容器目录]
-COPY ./app /usr/src/app
-
-# 运行命令
-RUN apt-get update && apt-get install -y curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# 声明运行时端口（仅文档作用）
-EXPOSE 8080
-
-# 容器启动命令（CMD 可被覆盖，ENTRYPOINT 不易覆盖）
-CMD ["python", "app.py"]
-```
-
-构建：
-```bash
-# 镜像名：版本号 .表示在当前文件夹构建
-docker build -t myapp:1.0 .
-docker build -f Dockerfile.dev -t myapp:dev .
-```
 
