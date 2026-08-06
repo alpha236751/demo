@@ -6,7 +6,6 @@
 - markdown扩展 2
 - EvenBetterTOML 1 toml语法高亮
 - codex 1
-- Container Tools 1 容器插件
 - SQLTools 2 数据库插件
 
 ## 解释器(有环境管理软件就不必要了)
