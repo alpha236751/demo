@@ -129,7 +129,7 @@ print(response.content)
 `from langchain_openai import ChatOpenAI`
 只能用OpenAI协议调用
 
-## 3. 模型初始化 init_chat_model
+## 3. 模型初始化-init_chat_model
 ```python
 import os
 
@@ -491,7 +491,7 @@ role、content、metadata
 - 提示词模板 结构清晰 易维护 可复用 
 
 ### 2.2 ChatPromptTemplate
-#### 2.2.1 两种实例化方式
+#### 2.2.1 实例化方式
 ```python
 from langchain_core.prompts import ChatPromptTemplate
 

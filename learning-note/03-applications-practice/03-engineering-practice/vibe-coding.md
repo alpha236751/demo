@@ -251,7 +251,19 @@ MCP servers->
 Subagents(子代理)
 ## Skill
 `.skills/`
-skill是一个封装了特定能力的可复用指令集，让AI能够精准、稳定完成特定任务的有效方法
+skill是一个封装了特定能力的可复用指令集，按需加载，让AI能够精准、稳定完成特定任务的有效方法
+
+元数据层 包含skill的名称和描述 始终加载
+指令层 LLM发现与某个skill匹配时加载
+资源层 reference 和 script
+
+skill告诉模型如何处理数据
+MCP给模型提供数据
+
+skill.md 说明文档
+reference 条件触发 读取
+script 条件触发 只执行 不读取
+
 skill资源：
 - Anthropic官方skill
     全局放user 项目放.claude/skills里
